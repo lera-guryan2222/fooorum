@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import axios from 'axios';
 
-const CreatePost = () => {
+const CreatePost = ({ postToEdit, onEditComplete }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
@@ -12,10 +12,19 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
+  const isEditMode = Boolean(postToEdit);
+
+  useEffect(() => {
+    if (isEditMode && postToEdit) {
+      setTitle(postToEdit.title || '');
+      setContent(postToEdit.content || '');
+    }
+  }, [isEditMode, postToEdit]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      setError('You must be logged in to create a post');
+      setError(isEditMode ? 'You must be logged in to edit a post' : 'You must be logged in to create a post');
       return;
     }
 
@@ -24,19 +33,47 @@ const CreatePost = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      await axios.post('http://localhost:8081/posts', 
-        { title, content },
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      navigate('/');
+      console.log('[DEBUG CreatePost] Token before request:', token);
+      if (token) {
+        console.log('[DEBUG CreatePost] Token snippet (first 10, last 10):', token.substring(0, 10) + '...' + token.substring(token.length - 10));
+      }
+      const postData = { title, content };
+
+      if (isEditMode) {
+        console.log(`[DEBUG CreatePost] Attempting to PUT /posts/${postToEdit.id} with token.`);
+        const response = await axios.put(`http://localhost:8081/posts/${postToEdit.id}`, 
+          postData,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (onEditComplete) {
+          const updatedPostData = { 
+            ...postToEdit,
+            ...response.data,
+          };
+          onEditComplete(updatedPostData);
+        }
+      } else {
+        console.log('[DEBUG CreatePost] Attempting to POST /posts with token.');
+        await axios.post('http://localhost:8081/posts', 
+          postData,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        navigate('/');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create post. Please try again.');
+      console.error('[DEBUG CreatePost] Error during submit:', err);
+      if (err.response) {
+        console.error('[DEBUG CreatePost] Error response data:', err.response.data);
+        console.error('[DEBUG CreatePost] Error response status:', err.response.status);
+        console.error('[DEBUG CreatePost] Error response headers:', err.response.headers);
+      }
+      setError(err.response?.data?.error || `Failed to ${isEditMode ? 'update' : 'create'} post. Please try again.`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isEditMode) {
     return (
       <div style={{
         textAlign: 'center',
@@ -62,7 +99,7 @@ const CreatePost = () => {
         marginBottom: theme.spacing.xl,
         fontSize: theme.typography.sizes['2xl']
       }}>
-        Create New Post
+        {isEditMode ? 'Edit Post' : 'Create New Post'}
       </h2>
 
       {error && (
@@ -157,7 +194,7 @@ const CreatePost = () => {
         }}>
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => isEditMode ? onEditComplete(null) : navigate('/')}
             style={{
               padding: `${theme.spacing.md} ${theme.spacing.xl}`,
               backgroundColor: 'transparent',
@@ -193,7 +230,7 @@ const CreatePost = () => {
               }
             }}
           >
-            {isLoading ? 'Creating...' : 'Create Post'}
+            {isLoading ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Post')}
           </button>
         </div>
       </form>
