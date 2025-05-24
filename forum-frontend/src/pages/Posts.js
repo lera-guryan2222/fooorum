@@ -41,42 +41,50 @@ const Posts = () => {
   }, [isAuthenticated]);
 
   const fetchPosts = async () => {
+    console.log("[DEBUG] Начинаем загрузку постов");
     try {
       setLoading(true);
       const token = localStorage.getItem("access_token");
+      console.log("[DEBUG] Token from localStorage:", token);
+
       const response = await axios.get("http://localhost:8081/posts", {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
-      console.log("[DEBUG] Raw response.data from /posts:", JSON.stringify(response.data, null, 2));
+      console.log("[DEBUG] Raw response from /posts:", response);
+      console.log("[DEBUG] Response data:", response.data);
+
+      if (response.data === null) {
+        console.log("[DEBUG] Server returned null, using empty array");
+        setPosts([]);
+        return;
+      }
+
+      if (!Array.isArray(response.data)) {
+        console.error("[DEBUG] Response data is not an array:", response.data);
+        setError("Ответ от сервера не является массивом");
+        return;
+      }
 
       const processedPosts = response.data.map((post, index) => {
-        console.log(`[DEBUG] Processing post at index ${index} (raw):`, JSON.stringify(post, null, 2));
-        console.log(`[DEBUG] Post ${index} - Original post.author_name:`, post.author_name);
-
-        const newPostObject = {
+        console.log(`[DEBUG] Processing post at index ${index}:`, post);
+        return {
           ...post,
-          authorName: post.author_name, // Имя автора поста
-          comments: post.comments?.map((comment, commentIndex) => {
-            console.log(`[DEBUG] Post ${index}, Comment ${commentIndex} - Original comment.author_name:`, comment.author_name);
-            const newCommentObject = {
-              ...comment,
-              authorName: comment.author_name || "Аноним" // Запасной вариант для комментариев
-            };
-            console.log(`[DEBUG] Post ${index}, Comment ${commentIndex} - Processed comment object:`, JSON.stringify(newCommentObject, null, 2));
-            return newCommentObject;
-          }) || []
+          authorName: post.author || "Неизвестный пользователь",
+          comments: Array.isArray(post.comments) ? post.comments.map(comment => ({
+            ...comment,
+            authorName: comment.author || "Аноним"
+          })) : []
         };
-        console.log(`[DEBUG] Post ${index} - Fully processed post object (to be used in state):`, JSON.stringify(newPostObject, null, 2));
-        return newPostObject;
       });
 
-      console.log("[DEBUG] Final processedPosts array to be set in state:", JSON.stringify(processedPosts, null, 2));
+      console.log("[DEBUG] Processed posts:", processedPosts);
       setPosts(processedPosts);
       setError("");
     } catch (err) {
-      console.error("Ошибка загрузки постов:", err);
-      setError(err.response?.data?.message || "Не удалось загрузить посты");
+      console.error("[DEBUG] Error fetching posts:", err);
+      console.error("[DEBUG] Error response:", err.response);
+      setError(err.response?.data?.error || "Не удалось загрузить посты");
     } finally {
       setLoading(false);
     }

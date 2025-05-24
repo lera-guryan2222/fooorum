@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/lera-guryan2222/fooorum/forum-service/internal/config"
 	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
@@ -50,20 +51,22 @@ func (p *Postgres) CreatePost(ctx context.Context, post *entity.Post) error {
 }
 
 func (p *Postgres) GetAllPosts(ctx context.Context) ([]*entity.Post, error) {
+	log.Printf("[DEBUG] Repository: Starting GetAllPosts query")
 	query := `
             SELECT 
             p.id, 
             p.title, 
             p.content, 
             p.user_id, 
-            u.username AS author,  -- Получаем имя автора из users
+            u.username AS author,
             p.created_at
         FROM posts p
-        JOIN users u ON p.user_id = u.id  -- Важно: соединяем с таблицей users
+        LEFT JOIN users u ON p.user_id = u.id
         ORDER BY p.created_at DESC
     `
 	rows, err := p.db.QueryContext(ctx, query)
 	if err != nil {
+		log.Printf("[ERROR] Repository: Failed to query posts: %v", err)
 		return nil, fmt.Errorf("failed to query posts: %w", err)
 	}
 	defer rows.Close()
@@ -76,18 +79,23 @@ func (p *Postgres) GetAllPosts(ctx context.Context) ([]*entity.Post, error) {
 			&post.Title,
 			&post.Content,
 			&post.UserID,
-			&post.Author, // Получаем username из таблицы users
+			&post.Author,
 			&post.CreatedAt,
 		); err != nil {
+			log.Printf("[ERROR] Repository: Failed to scan post: %v", err)
 			return nil, fmt.Errorf("failed to scan post: %w", err)
 		}
 		posts = append(posts, &post)
 	}
 	if err := rows.Err(); err != nil {
+		log.Printf("[ERROR] Repository: Rows error: %v", err)
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
+
+	log.Printf("[DEBUG] Repository: Successfully retrieved %d posts", len(posts))
 	return posts, nil
 }
+
 func (p *Postgres) GetPostByID(ctx context.Context, id int) (*entity.Post, error) {
 	query := `
         SELECT p.id, p.title, p.content, p.user_id, u.username, p.created_at

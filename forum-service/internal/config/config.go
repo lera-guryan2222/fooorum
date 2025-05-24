@@ -50,15 +50,15 @@ func Load() *Config {
 	cfg.Postgres.Password = "postgres"
 	cfg.Postgres.DBName = "PG"
 	cfg.Postgres.SSLMode = "disable"
-	cfg.Postgres.GRPCPort = "50052"
+	cfg.Postgres.GRPCPort = "50053"
 
 	// Server configuration
 	cfg.Server.Port = "8081"
 
 	// Auth configuration
-	cfg.Auth.AccessTokenDuration = 15 * time.Minute
+	cfg.Auth.AccessTokenDuration = 24 * time.Hour
 	cfg.Auth.RefreshTokenDuration = 360 * time.Hour
-	cfg.Auth.SecretKey = "your-secret-key"
+	cfg.Auth.SecretKey = "your-256-bit-secret"
 
 	// Logger configuration
 	cfg.Logger = struct {
@@ -73,7 +73,7 @@ func Load() *Config {
 	}
 
 	// GRPC configuration
-	cfg.GRPC.Port = "50051"
+	cfg.GRPC.Port = "50052"
 
 	cfg.Migrations.Enable = false
 	return cfg

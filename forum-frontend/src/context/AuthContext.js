@@ -23,7 +23,12 @@ export const AuthProvider = ({ children }) => {
           .join('')
       );
       
-      return JSON.parse(jsonPayload);
+      const decoded = JSON.parse(jsonPayload);
+      return {
+        userId: decoded.user_id,
+        username: decoded.username,
+        role: decoded.role || 'user'
+      };
     } catch (err) {
       console.error("Token parsing error:", err);
       return null;
@@ -37,7 +42,9 @@ export const AuthProvider = ({ children }) => {
         password
       });
 
-      const { AccessToken, User } = response.data;
+      console.log('[DEBUG] Login response:', response.data);
+
+      const { AccessToken, RefreshToken, User } = response.data;
       
       if (!AccessToken) {
         throw new Error('No access token received');
@@ -68,7 +75,9 @@ export const AuthProvider = ({ children }) => {
         username
       });
 
-      const { AccessToken, User } = response.data;
+      console.log('[DEBUG] Register response:', response.data);
+
+      const { AccessToken, RefreshToken, User } = response.data;
       
       if (!AccessToken) {
         throw new Error('No access token received');

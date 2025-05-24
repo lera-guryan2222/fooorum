@@ -52,9 +52,9 @@ func Load() *Config {
 	cfg.Server.Port = "8080"
 
 	// Auth
-	cfg.Auth.AccessTokenDuration = 15 * time.Minute
+	cfg.Auth.AccessTokenDuration = 24 * time.Hour
 	cfg.Auth.RefreshTokenDuration = 360 * time.Hour
-	cfg.Auth.SecretKey = "your-secret-key"
+	cfg.Auth.SecretKey = "your-256-bit-secret"
 
 	// Logger
 	cfg.Logger = logger.Config{

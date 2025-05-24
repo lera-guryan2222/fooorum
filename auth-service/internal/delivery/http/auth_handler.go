@@ -10,6 +10,7 @@ package delivery
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -136,6 +137,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[ERROR] Login: Invalid request format: %v", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error: err.Error(),
 			Code:  "invalid_request",
@@ -143,8 +145,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[DEBUG] Login: Attempting login for email: %s", req.Email)
 	authResponse, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
+		log.Printf("[ERROR] Login: Failed login attempt for email %s: %v", req.Email, err)
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Error: "Неверные учетные данные",
 			Code:  "invalid_credentials",
@@ -152,6 +156,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[DEBUG] Login: Successful login for email: %s", req.Email)
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(
 		"refresh_token",
@@ -284,8 +289,10 @@ func (h *AuthHandler) ValidateToken(c *gin.Context) {
 // @Param Authorization header string true "Bearer {token}"
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("[DEBUG] AuthMiddleware: Starting token validation")
 		tokenString := extractToken(c)
 		if tokenString == "" {
+			log.Printf("[ERROR] AuthMiddleware: No token found in request")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
 				Error: "Требуется токен авторизации",
 				Code:  "token_required",
@@ -293,14 +300,17 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
+		log.Printf("[DEBUG] AuthMiddleware: Parsing token")
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				log.Printf("[ERROR] AuthMiddleware: Unexpected signing method: %v", token.Header["alg"])
 				return nil, fmt.Errorf("неожиданный метод подписи: %v", token.Header["alg"])
 			}
 			return []byte(cfg.Auth.SecretKey), nil
 		})
 
 		if err != nil {
+			log.Printf("[ERROR] AuthMiddleware: Token parsing failed: %v", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
 				Error: "Недействительный токен",
 				Code:  "invalid_token",
@@ -309,10 +319,12 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			log.Printf("[DEBUG] AuthMiddleware: Token is valid, user_id: %v", claims["user_id"])
 			c.Set("user_id", claims["user_id"])
 			c.Set("username", claims["username"].(string))
 			c.Next()
 		} else {
+			log.Printf("[ERROR] AuthMiddleware: Invalid token claims")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
 				Error: "Недействительные данные токена",
 				Code:  "invalid_claims",
@@ -324,13 +336,21 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 func extractToken(c *gin.Context) string {
 	tokenString := c.GetHeader("Authorization")
 	if tokenString != "" {
+		log.Printf("[DEBUG] extractToken: Found token in Authorization header")
 		return strings.Replace(tokenString, "Bearer ", "", 1)
 	}
 
 	tokenString, _ = c.Cookie("access_token")
 	if tokenString != "" {
+		log.Printf("[DEBUG] extractToken: Found token in access_token cookie")
 		return tokenString
 	}
 
-	return c.Query("token")
+	tokenString = c.Query("token")
+	if tokenString != "" {
+		log.Printf("[DEBUG] extractToken: Found token in query parameter")
+	} else {
+		log.Printf("[DEBUG] extractToken: No token found in request")
+	}
+	return tokenString
 }

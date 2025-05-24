@@ -1,6 +1,8 @@
 package delivery
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -57,11 +59,31 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 
 	post.UserID = userID.(int)
 
-	// Получаем имя автора
-	user, err := h.userUC.GetUserByID(c.Request.Context(), post.UserID)
-	if err == nil {
-		post.Author = user.Username
+	// Get username from token claims
+	username, exists := c.Get("username")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "username not found in token"})
+		return
 	}
+
+	// Create user if they don't exist
+	user := &entity.User{
+		ID:       userID.(int),
+		Username: username.(string),
+		Role:     "user",
+	}
+	err := h.userUC.CreateUser(c.Request.Context(), user)
+	if err != nil {
+		// Ignore error if user already exists
+		existingUser, getErr := h.userUC.GetUserByID(c.Request.Context(), userID.(int))
+		if getErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create/get user: %v", err)})
+			return
+		}
+		user = existingUser
+	}
+
+	post.Author = user.Username
 
 	if err := h.postUC.CreatePost(c.Request.Context(), &post); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -137,24 +159,37 @@ func (h *PostHandler) GetPostByID(c *gin.Context) {
 // @Router /posts [get]
 
 func (h *PostHandler) GetAllPosts(c *gin.Context) {
+	log.Printf("[DEBUG] GetAllPosts: Handler started")
 	includeComments := c.Query("includeComments") == "true"
 
 	posts, err := h.postUC.GetAllPosts(c.Request.Context())
 	if err != nil {
+		log.Printf("[ERROR] GetAllPosts: Failed to get posts: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	if posts == nil {
+		log.Printf("[DEBUG] GetAllPosts: No posts found, returning empty array")
+		c.JSON(http.StatusOK, []entity.Post{})
+		return
+	}
+
+	log.Printf("[DEBUG] GetAllPosts: Retrieved %d posts", len(posts))
+
 	// Получаем имена авторов для постов
 	for i := range posts {
 		user, err := h.userUC.GetUserByID(c.Request.Context(), posts[i].UserID)
-		if err == nil {
-			posts[i].Author = user.Username
+		if err != nil {
+			log.Printf("[WARN] GetAllPosts: Failed to get user for post %d: %v", posts[i].ID, err)
+			continue
 		}
+		posts[i].Author = user.Username
 
 		if includeComments {
 			comments, err := h.commentUC.GetCommentsByPostID(c.Request.Context(), posts[i].ID)
 			if err != nil {
+				log.Printf("[ERROR] GetAllPosts: Failed to get comments for post %d: %v", posts[i].ID, err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
@@ -162,15 +197,18 @@ func (h *PostHandler) GetAllPosts(c *gin.Context) {
 			// Получаем имена авторов для комментариев
 			for j := range comments {
 				user, err := h.userUC.GetUserByID(c.Request.Context(), comments[j].UserID)
-				if err == nil {
-					comments[j].Author = user.Username
+				if err != nil {
+					log.Printf("[WARN] GetAllPosts: Failed to get user for comment %d: %v", comments[j].ID, err)
+					continue
 				}
+				comments[j].Author = user.Username
 			}
 
 			posts[i].Comments = comments
 		}
 	}
 
+	log.Printf("[DEBUG] GetAllPosts: Sending response with %d posts", len(posts))
 	c.JSON(http.StatusOK, posts)
 }
 
