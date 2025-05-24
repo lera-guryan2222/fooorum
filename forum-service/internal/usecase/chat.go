@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -118,6 +119,7 @@ type WebSocketHub struct {
 	maxConnections  int
 	connectionCount int
 	mutex           sync.Mutex
+	done            chan struct{} // Канал для сигнала завершения
 }
 
 type ChatUseCaseInterface interface {
@@ -159,6 +161,7 @@ func newWebSocketHub(maxConnections int) *WebSocketHub {
 		unregister:     make(chan *WebSocketClient),
 		clients:        make(map[*WebSocketClient]bool),
 		maxConnections: maxConnections,
+		done:           make(chan struct{}),
 	}
 }
 
@@ -181,6 +184,13 @@ func (h *WebSocketHub) run() {
 					delete(h.clients, client)
 				}
 			}
+		case <-h.done:
+			// Закрываем все клиентские соединения
+			for client := range h.clients {
+				close(client.send)
+				delete(h.clients, client)
+			}
+			return
 		}
 	}
 }
@@ -275,6 +285,9 @@ func (c *WebSocketClient) writePump() {
 }
 
 func (uc *ChatUseCase) SendMessage(ctx context.Context, message *entity.ChatMessage) error {
+	if message == nil {
+		return errors.New("message cannot be nil")
+	}
 	if err := uc.repo.SaveChatMessage(ctx, message); err != nil {
 		return err // Возвращаем ошибку из репозитория
 	}
