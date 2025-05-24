@@ -61,43 +61,53 @@ const Posts = () => {
 
       console.log("[DEBUG] Получено постов:", response.data.length);
 
-      const finalProcessedPosts = response.data
+      // Создаем базовые объекты постов
+      const postsWithoutComments = response.data
         .filter(post => post && typeof post === 'object')
-        .map(post => {
-          // Инициализируем базовую структуру поста
-          const processedPost = {
-            id: post.id,
-            title: post.title || "Без названия",
-            content: post.content || "",
-            created_at: post.created_at || new Date().toISOString(),
-            authorName: post.author || "Неизвестный пользователь",
-            user_id: post.user_id,
-            comments: []
-          };
+        .map(post => ({
+          id: post.id,
+          title: post.title || "Без названия",
+          content: post.content || "",
+          created_at: post.created_at || new Date().toISOString(),
+          authorName: post.author || "Неизвестный пользователь",
+          user_id: post.user_id,
+          comments: []
+        }));
 
-          // Если у поста есть комментарии, обрабатываем их
-          if (Array.isArray(post.comments)) {
-            processedPost.comments = post.comments.map(comment => ({
-              id: comment.id,
-              content: comment.content,
-              created_at: comment.created_at,
-              authorName: comment.author || "Аноним",
-              user_id: comment.user_id,
-              user: {
-                id: comment.user_id,
-                role: comment.user_role || 'user'
-              }
-            }));
-            console.log(`[DEBUG] Пост ${post.id} содержит ${processedPost.comments.length} комментариев`);
-          } else {
-            console.log(`[DEBUG] Пост ${post.id} инициализирован с пустым массивом комментариев`);
+      // Загружаем комментарии для каждого поста
+      const postsWithComments = await Promise.all(
+        postsWithoutComments.map(async (post) => {
+          try {
+            console.log(`[DEBUG] Загрузка комментариев для поста ${post.id}`);
+            const commentsResponse = await axios.get(
+              `http://localhost:8081/posts/${post.id}/comments`,
+              { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+            );
+
+            if (Array.isArray(commentsResponse.data)) {
+              post.comments = commentsResponse.data.map(comment => ({
+                id: comment.id,
+                content: comment.content,
+                created_at: comment.created_at,
+                authorName: comment.author || "Аноним",
+                user_id: comment.user_id,
+                user: {
+                  id: comment.user_id,
+                  role: comment.user_role || 'user'
+                }
+              }));
+              console.log(`[DEBUG] Загружено ${post.comments.length} комментариев для поста ${post.id}`);
+            }
+          } catch (err) {
+            console.error(`[DEBUG] Ошибка при загрузке комментариев для поста ${post.id}:`, err);
+            // Оставляем пустой массив комментариев в случае ошибки
           }
+          return post;
+        })
+      );
 
-          return processedPost;
-        });
-
-      console.log("[DEBUG] Обработка постов завершена. Всего постов:", finalProcessedPosts.length);
-      setPosts(finalProcessedPosts);
+      console.log("[DEBUG] Обработка постов завершена. Всего постов:", postsWithComments.length);
+      setPosts(postsWithComments);
       setError("");
     } catch (err) {
       console.error("[DEBUG] Ошибка при загрузке постов:", {
