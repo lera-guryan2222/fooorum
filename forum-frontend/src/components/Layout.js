@@ -12,11 +12,11 @@ const Layout = ({ children }) => {
     }}>
       <Navbar />
       <main style={{
-        flex: 1,
-        padding: theme.spacing.lg,
+        flex: '1 1 0%',
+        padding: '1rem',
         maxWidth: '1200px',
-        margin: '0 auto',
-        width: '100%'
+        margin: '0px auto',
+        width: '1000px'
       }}>
         {children}
       </main>

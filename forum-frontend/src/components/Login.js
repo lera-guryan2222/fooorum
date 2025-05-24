@@ -78,16 +78,14 @@ const Login = () => {
             required
             style={{
               width: '100%',
-              padding: theme.spacing.md,
-              borderRadius: theme.borderRadius.md,
-              border: `1px solid ${theme.colors.text.light}`,
-              fontSize: theme.typography.sizes.base,
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid rgb(148, 163, 184)',
+              fontSize: '1rem',
               outline: 'none',
-              transition: 'all 0.2s ease',
-              ':focus': {
-                borderColor: theme.colors.primary,
-                boxShadow: `0 0 0 2px ${theme.colors.primary}20`
-              }
+              transition: '0.2s',
+              justifyContent: 'center',
+              paddingRight: '0.03px'
             }}
           />
         </div>
@@ -117,6 +115,7 @@ const Login = () => {
               border: `1px solid ${theme.colors.text.light}`,
               fontSize: theme.typography.sizes.base,
               outline: 'none',
+              paddingRight: '0.03px',
               transition: 'all 0.2s ease',
               ':focus': {
                 borderColor: theme.colors.primary,
