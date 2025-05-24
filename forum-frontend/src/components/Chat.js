@@ -1,38 +1,79 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { theme } from '../styles/theme';
+
+const formatTime = (date) => {
+  if (!(date instanceof Date) || isNaN(date)) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const Message = ({ message, isOwnMessage }) => (
+  <div style={{
+    marginBottom: theme.spacing.sm,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
+  }}>
+    <div style={{
+      backgroundColor: isOwnMessage ? theme.colors.primary : theme.colors.surface,
+      color: isOwnMessage ? 'white' : theme.colors.text.primary,
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.lg,
+      maxWidth: '70%',
+      boxShadow: theme.shadows.sm,
+      position: 'relative'
+    }}>
+      {!isOwnMessage && (
+        <span style={{
+          fontWeight: '600',
+          fontSize: theme.typography.sizes.sm,
+          marginBottom: theme.spacing.xs,
+          display: 'block',
+          color: theme.colors.text.secondary
+        }}>
+          {message.author}
+        </span>
+      )}
+      <p style={{ margin: 0, wordBreak: 'break-word' }}>{message.text}</p>
+      <span style={{
+        fontSize: theme.typography.sizes.xs,
+        color: isOwnMessage ? 'rgba(255,255,255,0.8)' : theme.colors.text.light,
+        marginTop: theme.spacing.xs,
+        display: 'block',
+        textAlign: 'right'
+      }}>
+        {formatTime(message.created_at)}
+      </span>
+    </div>
+  </div>
+);
 
 const Chat = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [error, setError] = useState(null);
   const [ws, setWs] = useState(null);
+  const [isConnecting, setIsConnecting] = useState(true);
   const sentMessageIds = useRef(new Set());
   const messagesContainerRef = useRef(null);
   const cleanupIntervalRef = useRef(null);
 
-  const parseMessageDate = (message) => {
-    return {
-      ...message,
-      created_at: message.created_at ? new Date(message.created_at) : new Date()
-    };
-  };
+  const parseMessageDate = (message) => ({
+    ...message,
+    created_at: message.created_at ? new Date(message.created_at) : new Date()
+  });
 
-  // Функция для сортировки сообщений (новые сверху)
-  const sortMessages = (messages) => {
-    return [...messages].sort((a, b) => b.created_at - a.created_at);
-  };
+  const sortMessages = (messages) => (
+    [...messages].sort((a, b) => b.created_at - a.created_at)
+  );
 
-  // Функция для удаления старых сообщений (старше 30 минут)
-  const cleanupOldMessages = () => {
+  const cleanupOldMessages = useCallback(() => {
     const now = new Date();
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
-    
-    setMessages(prev => 
-      sortMessages(prev.filter(msg => msg.created_at > thirtyMinutesAgo))
-    );
-  };
+    setMessages(prev => sortMessages(prev.filter(msg => msg.created_at > thirtyMinutesAgo)));
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -43,65 +84,68 @@ const Chat = () => {
       const parsedMessages = (response.data || []).map(parseMessageDate);
       setMessages(sortMessages(parsedMessages));
       parsedMessages.forEach(msg => sentMessageIds.current.add(msg.id));
+      setError(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load messages');
+      setError('Failed to load messages. Please try again later.');
     }
   }, []);
 
   useEffect(() => {
     fetchMessages();
-
-    // Устанавливаем интервал для очистки старых сообщений (каждую минуту)
     cleanupIntervalRef.current = setInterval(cleanupOldMessages, 60 * 1000);
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.hostname}:8081/chat/ws`;
     
-    const socket = new WebSocket(wsUrl);
-    setWs(socket);
+    const connectWebSocket = () => {
+      const socket = new WebSocket(wsUrl);
+      setWs(socket);
+      setIsConnecting(true);
 
-    socket.onopen = () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        socket.send(JSON.stringify({ type: 'auth', token }));
-      }
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        const parsedMessage = parseMessageDate(message);
-        
-        if (!sentMessageIds.current.has(parsedMessage.id)) {
-          sentMessageIds.current.add(parsedMessage.id);
-          setMessages(prev => sortMessages([...prev, parsedMessage]));
+      socket.onopen = () => {
+        setIsConnecting(false);
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          socket.send(JSON.stringify({ type: 'auth', token }));
         }
-      } catch (err) {
-        console.error('Error parsing message:', err);
-      }
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          const parsedMessage = parseMessageDate(message);
+          
+          if (!sentMessageIds.current.has(parsedMessage.id)) {
+            sentMessageIds.current.add(parsedMessage.id);
+            setMessages(prev => sortMessages([...prev, parsedMessage]));
+          }
+        } catch (err) {
+          console.error('Error parsing message:', err);
+        }
+      };
+
+      socket.onerror = () => {
+        setError('Connection error. Trying to reconnect...');
+        setIsConnecting(true);
+      };
+
+      socket.onclose = () => {
+        setIsConnecting(true);
+        setTimeout(connectWebSocket, 5000);
+      };
     };
 
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setError('Connection error');
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket disconnected');
-      setTimeout(() => {
-        setWs(new WebSocket(wsUrl));
-      }, 5000);
-    };
+    connectWebSocket();
 
     return () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.close();
       }
       if (cleanupIntervalRef.current) {
         clearInterval(cleanupIntervalRef.current);
       }
     };
-  }, [fetchMessages]);
+  }, [fetchMessages, cleanupOldMessages]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -117,93 +161,144 @@ const Chat = () => {
           token: token
         }));
         setNewMessage('');
+        setError(null);
       } else {
         setError('Connection not ready. Please wait...');
       }
     } catch (err) {
-      console.error('Error sending message:', err);
-      setError(err.message || 'Failed to send message');
+      setError('Failed to send message. Please try again.');
     }
-  };
-
-  const formatTime = (date) => {
-    if (!(date instanceof Date) || isNaN(date)) {
-      return '';
-    }
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <div className="chat-container" style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <h3 style={{ textAlign: 'center' }}>Chat</h3>
-      {error && <div style={{ color: 'red', textAlign: 'center' }}>{error}</div>}
+    <div style={{
+      maxWidth: '800px',
+      margin: '0 auto',
+      padding: theme.spacing.lg,
+      backgroundColor: theme.colors.background,
+      borderRadius: theme.borderRadius.lg,
+      boxShadow: theme.shadows.lg
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: theme.spacing.lg
+      }}>
+        <h2 style={{
+          margin: 0,
+          color: theme.colors.text.primary,
+          fontSize: theme.typography.sizes['2xl']
+        }}>
+          Chat Room
+        </h2>
+        {isConnecting && (
+          <div style={{
+            color: theme.colors.warning,
+            fontSize: theme.typography.sizes.sm,
+            display: 'flex',
+            alignItems: 'center',
+            gap: theme.spacing.sm
+          }}>
+            <span>Connecting...</span>
+          </div>
+        )}
+      </div>
 
-      {isAuthenticated && (
-        <form onSubmit={handleSendMessage} style={{ display: 'flex', marginBottom: '10px' }}>
+      {error && (
+        <div style={{
+          backgroundColor: `${theme.colors.danger}10`,
+          color: theme.colors.danger,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          marginBottom: theme.spacing.lg
+        }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{
+        height: '500px',
+        overflowY: 'auto',
+        padding: theme.spacing.md,
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.md,
+        marginBottom: theme.spacing.lg,
+        width: '100%'
+      }} ref={messagesContainerRef}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column-reverse'
+        }}>
+          {messages.map((message) => (
+            <Message
+              key={message.id}
+              message={message}
+              isOwnMessage={message.author === currentUser?.username}
+            />
+          ))}
+        </div>
+      </div>
+
+      {isAuthenticated ? (
+        <form onSubmit={handleSendMessage} style={{
+          display: 'flex',
+          gap: theme.spacing.md,
+          width: '100%'
+        }}>
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type your message..."
-            style={{ 
+            style={{
               flex: 1,
-              width:'150px',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px 0 0 4px'
+              padding: theme.spacing.md,
+              borderRadius: theme.borderRadius.md,
+              border: `1px solid ${theme.colors.text.light}`,
+              fontSize: theme.typography.sizes.base,
+              outline: 'none',
+              minWidth: '200px',
+              transition: 'all 0.2s ease',
+              ':focus': {
+                borderColor: theme.colors.primary,
+                boxShadow: `0 0 0 2px ${theme.colors.primary}20`
+              }
             }}
           />
-          <button 
+          <button
             type="submit"
+            disabled={!newMessage.trim()}
             style={{
-              padding: '8px 15px',
-              backgroundColor: '#4CAF50',
+              backgroundColor: theme.colors.primary,
               color: 'white',
+              padding: `${theme.spacing.md} ${theme.spacing.xl}`,
+              borderRadius: theme.borderRadius.md,
               border: 'none',
-              borderRadius: '0 4px 4px 0',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: theme.typography.sizes.base,
+              fontWeight: '600',
+              minWidth: '100px',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s ease',
+              opacity: !newMessage.trim() ? '0.7' : '1',
+              ':hover': {
+                backgroundColor: theme.colors.secondary
+              }
             }}
           >
-            Send
+            Send Message
           </button>
         </form>
+      ) : (
+        <div style={{
+          textAlign: 'center',
+          color: theme.colors.text.secondary,
+          padding: theme.spacing.lg
+        }}>
+          Please log in to participate in the chat.
+        </div>
       )}
-
-      <div 
-        ref={messagesContainerRef}
-        style={{ 
-          height: '400px', 
-          width: '200px',
-          overflowY: 'auto', 
-          border: '1px solid #ddd', 
-          padding: '10px',
-          borderRadius: '4px',
-          display: 'flex',
-          flexDirection: 'column-reverse'
-        }}
-      >
-        {messages.map((message) => (
-          <div 
-            key={message.id}
-            style={{ 
-              marginBottom: '10px', 
-              padding: '8px', 
-              backgroundColor: '#f5f5f5',
-              borderRadius: '4px'
-            }}
-          >
-            <strong style={{ color: '#333' }}>{message.author}: </strong>
-            <span style={{ color: '#555' }}>{message.text}</span>
-            <div style={{ 
-              fontSize: '0.8em', 
-              color: '#777',
-              textAlign: 'right'
-            }}>
-              {formatTime(message.created_at)}
-            </div>
-          </div>
-        ))}
-      </div>          
     </div>
   );
 };

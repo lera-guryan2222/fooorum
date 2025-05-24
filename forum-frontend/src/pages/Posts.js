@@ -86,15 +86,21 @@ const Posts = () => {
         params: { includeComments: true }
       });
 
-      // Добавляем проверку на наличие comments в каждом посте
+      // Показываем данные через alert
+      if (response.data && response.data.length > 0) {
+        alert('Post data: ' + JSON.stringify(response.data[0], null, 2));
+      }
+
+      // Обрабатываем посты точно так же, как в старом рабочем коде
       const postsWithComments = response.data.map(post => ({
         ...post,
-        comments: post.comments || [] // Если comments нет, устанавливаем пустой массив
+        comments: post.comments || []
       }));
 
       setPosts(postsWithComments);
       setError("");
     } catch (err) {
+      alert('Error: ' + JSON.stringify(err.response?.data, null, 2));
       setError(err.response?.data?.error || "Не удалось загрузить посты");
     } finally {
       setLoading(false);
@@ -132,6 +138,16 @@ const Posts = () => {
     } catch (err) {
       setError(err.response?.data?.error || "Не удалось добавить комментарий");
     }
+  };
+
+  const canDeleteComment = (comment) => {
+    if (!isAuthenticated || !currentUser) return false;
+    return currentUser.role === 'admin' || currentUser.userId === comment.user_id;
+  };
+
+  const canDeletePost = (post) => {
+    if (!isAuthenticated || !currentUser) return false;
+    return currentUser.role === 'admin' || currentUser.userId === post.user_id;
   };
 
   const handleDeleteComment = async (postId, commentId) => {
@@ -207,9 +223,9 @@ const Posts = () => {
                       <small>
                         Автор: <strong>{post.author}</strong>
                       </small>
-                    </div>
-                    <div className="post-date">
-                      {new Date(post.created_at).toLocaleDateString()}
+                      <div className="post-date">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
 
@@ -217,7 +233,7 @@ const Posts = () => {
                     {post.content}
                   </div>
 
-                  {(isAuthenticated && (currentUser.userId === post.user_id || currentUser.role === 'admin')) && (
+                  {canDeletePost(post) && (
                     <div className="post-actions">
                       <button
                         onClick={() => handleEditPost(post)}
@@ -242,8 +258,7 @@ const Posts = () => {
                       }))}
                       className="toggle-comments"
                     >
-                      {expandedComments[post.id] ? "Скрыть" : "Показать"} комментарии (
-                      {(post.comments || []).length})
+                      {expandedComments[post.id] ? "Скрыть" : "Показать"} комментарии ({(post.comments || []).length})
                     </button>
 
                     {expandedComments[post.id] && (
@@ -251,14 +266,25 @@ const Posts = () => {
                         {(post.comments || []).map(comment => (
                           <div key={`comment-${comment.id}`} className="comment">
                             <p>{comment.content}</p>
-                            <small>
-                              Автор: <strong>{comment.author}</strong>, {new Date(comment.created_at).toLocaleString()}
-                            </small>
+                            <div className="comment-meta">
+                              <small className="author-info">
+                                Автор: <strong>{comment.author || 'Неизвестный пользователь'}</strong>
+                                {comment.author_role && comment.author_role !== 'user' && (
+                                  <span className={`role-badge ${comment.author_role}`}>
+                                    {comment.author_role}
+                                  </span>
+                                )}
+                              </small>
+                              <span className="comment-date">
+                                {new Date(comment.created_at).toLocaleString()}
+                              </span>
+                            </div>
                             
-                            {(isAuthenticated && (currentUser.userId === comment.user_id || currentUser.role === 'admin')) && (
+                            {canDeleteComment(comment) && (
                               <button
                                 onClick={() => handleDeleteComment(post.id, comment.id)}
                                 className="delete-comment-button"
+                                title="Удалить комментарий"
                               >
                                 ×
                               </button>
@@ -266,7 +292,7 @@ const Posts = () => {
                           </div>
                         ))}
 
-                        {isAuthenticated && (
+                        {isAuthenticated ? (
                           <div className="add-comment">
                             <textarea
                               value={commentTexts[post.id] || ""}
@@ -280,6 +306,10 @@ const Posts = () => {
                             >
                               Добавить комментарий
                             </button>
+                          </div>
+                        ) : (
+                          <div className="login-to-comment">
+                            Войдите, чтобы оставить комментарий
                           </div>
                         )}
                       </div>
@@ -295,6 +325,7 @@ const Posts = () => {
       <style jsx>{`
         .posts-container {
           margin-top: 30px;
+          padding: 0 20px;
         }
         
         .loading, .error {
@@ -309,101 +340,193 @@ const Posts = () => {
         .posts-list {
           display: grid;
           gap: 20px;
+          margin-bottom: 40px;
         }
         
         .post-card {
           border: 1px solid #ddd;
-          padding: 15px;
-          border-radius: 5px;
+          padding: 20px;
+          border-radius: 8px;
+          background: white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           position: relative;
         }
         
         .post-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
+          align-items: flex-start;
+          margin-bottom: 15px;
         }
         
-        .post-date {
+        .post-header h3 {
+          margin: 0 0 5px 0;
+          color: #2c3e50;
+        }
+        
+        .post-meta,
+        .comment-meta {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-top: 5px;
           color: #666;
+          font-size: 0.9em;
+        }
+
+        .author-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .role-badge {
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.8em;
+          font-weight: 500;
+          text-transform: capitalize;
+        }
+
+        .role-badge.admin {
+          background-color: #ff5722;
+          color: white;
+        }
+
+        .role-badge.moderator {
+          background-color: #2196F3;
+          color: white;
+        }
+
+        .post-date,
+        .comment-date {
+          color: #999;
         }
         
         .post-content {
-          margin: 10px 0;
+          margin: 15px 0;
+          line-height: 1.6;
+          color: #2c3e50;
+        }
+        
+        .post-actions {
+          display: flex;
+          gap: 10px;
+          margin: 15px 0;
+        }
+        
+        .edit-post-button,
+        .delete-post-button {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9em;
+          transition: all 0.2s ease;
+        }
+        
+        .edit-post-button {
+          background: #4CAF50;
+          color: white;
         }
         
         .delete-post-button {
-          position: absolute;
-          right: 1px;
-          background: #ff4444;
+          background: #f44336;
           color: white;
-          border: none;
-          width: 150px;
-          border-radius: 4px;
-          padding: 5px 10px;
-          cursor: pointer;
         }
         
         .comments-section {
-          margin-top: 15px;
+          margin-top: 20px;
+          border-top: 1px solid #eee;
+          padding-top: 20px;
         }
         
         .toggle-comments {
           background: none;
           border: none;
-          color: #007bff;
+          color: #2196F3;
           cursor: pointer;
           padding: 5px 0;
+          font-size: 0.9em;
         }
         
         .comments-list {
-          margin-top: 10px;
+          margin-top: 15px;
         }
         
         .comment {
-          padding: 10px;
-          margin: 5px 0;
-          background: #f5f5f5;
-          border-radius: 4px;
+          padding: 15px;
+          margin: 10px 0;
+          background: #f8f9fa;
+          border-radius: 6px;
           position: relative;
+        }
+        
+        .comment p {
+          margin: 0 0 10px 0;
+          color: #2c3e50;
         }
         
         .delete-comment-button {
           position: absolute;
-          top: 5px;
-          right: 5px;
+          top: 10px;
+          right: 10px;
           background: transparent;
           border: none;
           cursor: pointer;
-          color: #ff4444;
+          color: #dc3545;
           font-size: 1.2rem;
+          padding: 0 5px;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        }
+        
+        .delete-comment-button:hover {
+          background: rgba(220, 53, 69, 0.1);
         }
         
         .add-comment {
-          margin-top: 15px;
+          margin-top: 20px;
         }
         
         .add-comment textarea {
           width: 100%;
-          padding: 8px;
-          margin-bottom: 5px;
+          padding: 12px;
           border: 1px solid #ddd;
-          border-radius: 4px;
+          border-radius: 6px;
+          margin-bottom: 10px;
+          min-height: 80px;
+          resize: vertical;
+          font-family: inherit;
         }
         
         .add-comment-button {
-          padding: 5px 10px;
-          background: #007bff;
+          padding: 8px 16px;
+          background: #2196F3;
           color: white;
           border: none;
           border-radius: 4px;
           cursor: pointer;
+          font-size: 0.9em;
+          transition: all 0.2s ease;
         }
-
+        
         .add-comment-button:disabled {
-          background: #cccccc;
+          background: #ccc;
           cursor: not-allowed;
+        }
+        
+        .add-comment-button:not(:disabled):hover {
+          background: #1976D2;
+        }
+        
+        .login-to-comment {
+          text-align: center;
+          color: #666;
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 6px;
+          margin-top: 15px;
         }
       `}</style>
     </div>

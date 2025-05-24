@@ -1,21 +1,58 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../styles/theme';
 import axios from 'axios';
 
-const CreatePost = () => {
+const EditPost = () => {
+  const { id } = useParams();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await axios.get(`http://localhost:8081/posts/${id}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        
+        // Проверяем права на редактирование
+        const post = response.data;
+        const canEdit = currentUser?.role === 'moderator' || 
+                       currentUser?.role === 'admin' || 
+                       post.author_id === currentUser?.userId;
+
+        if (!canEdit) {
+          setError('You do not have permission to edit this post');
+          return;
+        }
+
+        setTitle(post.title);
+        setContent(post.content);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load post. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchPost();
+    } else {
+      setError('Please log in to edit posts');
+      setIsLoading(false);
+    }
+  }, [id, isAuthenticated, currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      setError('You must be logged in to create a post');
+      setError('You must be logged in to edit a post');
       return;
     }
 
@@ -24,26 +61,37 @@ const CreatePost = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      await axios.post('http://localhost:8081/posts', 
+      await axios.put(`http://localhost:8081/posts/${id}`, 
         { title, content },
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create post. Please try again.');
-    } finally {
+      setError(err.response?.data?.error || 'Failed to update post. Please try again.');
       setIsLoading(false);
     }
   };
 
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
       <div style={{
         textAlign: 'center',
-        color: theme.colors.text.secondary,
+        padding: theme.spacing.xl,
+        color: theme.colors.text.secondary
+      }}>
+        Loading post...
+      </div>
+    );
+  }
+
+  if (error && !title && !content) {
+    return (
+      <div style={{
+        textAlign: 'center',
+        color: theme.colors.danger,
         padding: theme.spacing.xl
       }}>
-        Please log in to create posts.
+        {error}
       </div>
     );
   }
@@ -62,7 +110,7 @@ const CreatePost = () => {
         marginBottom: theme.spacing.xl,
         fontSize: theme.typography.sizes['2xl']
       }}>
-        Create New Post
+        Edit Post
       </h2>
 
       {error && (
@@ -193,7 +241,7 @@ const CreatePost = () => {
               }
             }}
           >
-            {isLoading ? 'Creating...' : 'Create Post'}
+            {isLoading ? 'Updating...' : 'Update Post'}
           </button>
         </div>
       </form>
@@ -201,4 +249,4 @@ const CreatePost = () => {
   );
 };
 
-export default CreatePost;
+export default EditPost; 

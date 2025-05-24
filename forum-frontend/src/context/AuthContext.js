@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
+import axios from 'axios';
 
 export const AuthContext = createContext();
 
@@ -9,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   const parseJwtToken = (token) => {
     try {
       if (!token || typeof token !== 'string') return null;
-      
       token = token.replace(/^"(.*)"$/, '$1').replace(/^Bearer\s+/i, '');
       const parts = token.split('.');
       if (parts.length !== 3) return null;
@@ -30,8 +30,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const login = async (email, password) => {
+    try {
+      const response = await axios.post('http://localhost:8080/auth/login', {
+        email,
+        password
+      });
+
+      const { AccessToken, User } = response.data;
+      
+      if (!AccessToken) {
+        throw new Error('No access token received');
+      }
+
+      localStorage.setItem('access_token', AccessToken);
+      
+      const decoded = parseJwtToken(AccessToken);
+      if (decoded) {
+        setIsAuthenticated(true);
+        setCurrentUser({
+          userId: decoded.user_id,
+          username: User.username,
+          role: decoded.role || 'user'
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const register = async (email, password, username) => {
+    try {
+      const response = await axios.post('http://localhost:8080/auth/register', {
+        email,
+        password,
+        username
+      });
+
+      const { AccessToken, User } = response.data;
+      
+      if (!AccessToken) {
+        throw new Error('No access token received');
+      }
+
+      localStorage.setItem('access_token', AccessToken);
+      
+      const decoded = parseJwtToken(AccessToken);
+      if (decoded) {
+        setIsAuthenticated(true);
+        setCurrentUser({
+          userId: decoded.user_id,
+          username: User.username,
+          role: decoded.role || 'user'
+        });
+      }
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('access_token');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+  };
+
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem('access_token');
     if (token) {
       const decoded = parseJwtToken(token);
       if (decoded) {
@@ -42,17 +109,22 @@ export const AuthProvider = ({ children }) => {
           role: decoded.role || 'user'
         });
       } else {
-        localStorage.removeItem("access_token");
+        localStorage.removeItem('access_token');
+        setIsAuthenticated(false);
+        setCurrentUser(null);
       }
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
+    <AuthContext.Provider value={{
+      isAuthenticated,
       setIsAuthenticated,
       currentUser,
-      setCurrentUser
+      setCurrentUser,
+      login,
+      register,
+      logout
     }}>
       {children}
     </AuthContext.Provider>
