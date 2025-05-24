@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -29,6 +30,40 @@ func (m *MockCommentRepository) DeleteComment(ctx context.Context, commentID int
 	return args.Error(0)
 }
 
+func setupTestData(ctx context.Context, repo *Postgres) error {
+	// Очищаем таблицы
+	_, err := repo.db.ExecContext(ctx, `
+		DELETE FROM comments;
+		DELETE FROM posts;
+		DELETE FROM users;
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Создаем тестового пользователя
+	_, err = repo.db.ExecContext(ctx, `
+		INSERT INTO users (id, username, email, password_hash, role)
+		VALUES (1, 'testuser', 'testuser@example.com', 'hashedpassword', 'user')
+		RETURNING id
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Создаем тестовый пост
+	_, err = repo.db.ExecContext(ctx, `
+		INSERT INTO posts (id, title, content, user_id)
+		VALUES (1, 'Test Post', 'Test Content', 1)
+		RETURNING id
+	`)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func TestPostgresCreateComment(t *testing.T) {
 	repo, err := setupTestDB()
 	if err != nil {
@@ -36,6 +71,13 @@ func TestPostgresCreateComment(t *testing.T) {
 	}
 
 	ctx := context.Background()
+
+	// Устанавливаем тестовые данные
+	err = setupTestData(ctx, repo)
+	if err != nil {
+		t.Fatalf("не удалось установить тестовые данные: %v", err)
+	}
+
 	comment := &entity.Comment{
 		Content: "Test comment",
 		PostID:  1,
@@ -54,36 +96,27 @@ func TestPostgresGetCommentsByPostID(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	postID := 1
 
-	// Удаляем существующие записи перед вставкой
-	_, err = repo.db.ExecContext(ctx, `
-		DELETE FROM users WHERE id = 1
-	`)
+	// Устанавливаем тестовые данные
+	err = setupTestData(ctx, repo)
 	if err != nil {
-		t.Fatalf("не удалось удалить тестовые данные: %v", err)
+		t.Fatalf("не удалось установить тестовые данные: %v", err)
 	}
 
-	// Вставка тестовых данных
+	// Создаем тестовый комментарий
 	_, err = repo.db.ExecContext(ctx, `
-		INSERT INTO users (id, username, email, password_hash) VALUES (1, 'testuser', 'testuser@example.com', 'hashedpassword')
+		INSERT INTO comments (content, post_id, user_id)
+		VALUES ('Test comment', 1, 1)
 	`)
 	if err != nil {
-		t.Fatalf("не удалось вставить тестовые данные: %v", err)
+		t.Fatalf("не удалось создать тестовый комментарий: %v", err)
 	}
 
-	_, err = repo.db.ExecContext(ctx, `
-		INSERT INTO comments (content, post_id, user_id, created_at)
-		VALUES ('Test comment', 1, 1, NOW())
-	`)
-	if err != nil {
-		t.Fatalf("не удалось вставить тестовые данные: %v", err)
-	}
-
-	comments, err := repo.GetCommentsByPostID(ctx, postID)
+	comments, err := repo.GetCommentsByPostID(ctx, 1)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, comments)
 }
+
 func TestPostgresDeleteComment(t *testing.T) {
 	repo, err := setupTestDB()
 	if err != nil {
@@ -91,26 +124,23 @@ func TestPostgresDeleteComment(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	commentID := 1
-	userID := 1
 
-	// Удаляем существующие записи перед вставкой
-	_, err = repo.db.ExecContext(ctx, `
-		DELETE FROM comments WHERE id = 1
-	`)
+	// Устанавливаем тестовые данные
+	err = setupTestData(ctx, repo)
 	if err != nil {
-		t.Fatalf("не удалось удалить тестовые данные: %v", err)
+		t.Fatalf("не удалось установить тестовые данные: %v", err)
 	}
 
-	// Вставка тестовых данных
+	// Создаем тестовый комментарий
 	_, err = repo.db.ExecContext(ctx, `
-		INSERT INTO comments (id, content, post_id, user_id, created_at)
-		VALUES (1, 'Test comment', 1, 1, NOW())
+		INSERT INTO comments (content, post_id, user_id)
+		VALUES ('Test comment', 1, 1)
+		RETURNING id
 	`)
 	if err != nil {
-		t.Fatalf("не удалось вставить тестовые данные: %v", err)
+		t.Fatalf("не удалось создать тестовый комментарий: %v", err)
 	}
 
-	err = repo.DeleteComment(ctx, commentID, userID)
+	err = repo.DeleteComment(ctx, 1, 1)
 	assert.NoError(t, err)
 }

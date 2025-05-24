@@ -2,40 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
-	_ "github.com/lib/pq" // Драйвер для PostgreSQL
 	"github.com/stretchr/testify/assert"
 )
-
-func setupTestDB() (*Postgres, error) {
-	// Замените на строку подключения к вашей тестовой базе данных
-	connStr := "user=postgres dbname=PG sslmode=disable password=postgres"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, fmt.Errorf("не удалось открыть базу данных: %v", err)
-	}
-
-	// Создание тестовой таблицы
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS chat_messages (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER,
-			author VARCHAR(255),
-			text TEXT,
-			created_at TIMESTAMP
-		)
-	`)
-	if err != nil {
-		return nil, fmt.Errorf("не удалось создать тестовую таблицу: %v", err)
-	}
-
-	return &Postgres{db: db}, nil
-}
 
 func TestPostgresCreateChatMessage(t *testing.T) {
 	repo, err := setupTestDB()

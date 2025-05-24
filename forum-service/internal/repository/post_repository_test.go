@@ -19,10 +19,29 @@ func TestPostgresCreatePost(t *testing.T) {
 	}
 
 	ctx := context.Background()
+
+	// Создаем тестового пользователя
+	timestamp := time.Now().UnixNano()
+	username := fmt.Sprintf("testuser_%d", timestamp)
+	email := fmt.Sprintf("testuser_%d@example.com", timestamp)
+
+	// Вставляем тестового пользователя
+	_, err = repo.db.ExecContext(ctx, `
+		INSERT INTO users (username, email, password_hash)
+		VALUES ($1, $2, 'hashedpassword')
+		RETURNING id
+	`, username, email)
+	require.NoError(t, err, "Failed to insert test user")
+
+	// Получаем ID созданного пользователя
+	var userID int
+	err = repo.db.QueryRowContext(ctx, "SELECT id FROM users WHERE username = $1", username).Scan(&userID)
+	require.NoError(t, err, "Failed to get user ID")
+
 	post := &entity.Post{
 		Title:   "Test Post",
 		Content: "This is a test post",
-		UserID:  1,
+		UserID:  userID,
 	}
 
 	err = repo.CreatePost(ctx, post)

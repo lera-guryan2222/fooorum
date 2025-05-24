@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -122,6 +123,10 @@ func (h *CommentHandler) DeleteComment(c *gin.Context) {
 	}
 
 	if err := h.commentUC.DeleteComment(c.Request.Context(), commentID, userID.(int)); err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "comment not found"})
+			return
+		}
 		if err.Error() == "unauthorized: you can only delete your own comments" {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 			return
