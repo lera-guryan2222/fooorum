@@ -322,7 +322,7 @@ const Posts = () => {
         }
         
         .role-badge.admin {
-          background: #f44336;
+          background:rgb(44, 42, 42);
           color: white;
         }
         
@@ -340,7 +340,7 @@ const Posts = () => {
         
         .post-actions button.delete {
           background: #ffebee;
-          color: #c62828;
+          color: rgb(44, 42, 42);
         }
         
         .post-content {
@@ -369,7 +369,7 @@ const Posts = () => {
           background: none;
           border: none;
           cursor: pointer;
-          color: #c62828;
+          color:rgb(44, 42, 42);
         }
         
         .add-comment textarea {

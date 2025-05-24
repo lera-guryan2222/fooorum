@@ -84,14 +84,17 @@ const Navbar = () => {
                 onClick={logout}
                 style={{
                   backgroundColor: 'transparent',
-                  border: `1px solid ${theme.colors.danger}`,
-                  color: theme.colors.danger,
-                  padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-                  borderRadius: theme.borderRadius.md,
+                  border: '1px solid rgb(224, 210, 210)',
+                  color: 'rgb(22, 46, 95)',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  transition: '0.2s',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   ':hover': {
-                    backgroundColor: `${theme.colors.danger}10`
+                    backgroundColor: 'rgb(27, 22, 95)',
+                    color: 'white'
                   }
                 }}
               >

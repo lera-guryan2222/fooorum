@@ -507,8 +507,18 @@ const Posts = () => {
         }
         
         .post-actions button.delete {
-          background: #ffebee;
-          color: #c62828;
+          background-color: transparent;
+          border: 1px solid rgb(218, 218, 221);
+          color: rgb(31, 14, 65);
+          padding: 0.5rem 1rem;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .post-actions button.delete:hover {
+          background-color: rgb(39, 17, 70);
+          color: white;
         }
         
         .post-content {
@@ -538,6 +548,14 @@ const Posts = () => {
           border: none;
           cursor: pointer;
           color: #c62828;
+          font-size: 1.2em;
+          padding: 0.2rem 0.5rem;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        }
+
+        .delete-comment:hover {
+          background-color: rgba(198, 40, 40, 0.1);
         }
         
         .add-comment textarea {
