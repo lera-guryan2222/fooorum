@@ -1,4 +1,4 @@
-module github.com/perfect1337/forum-service
+module github.com/lera-guryan2222/fooorum/forum-service
 
 go 1.24.1
 
@@ -7,7 +7,7 @@ require (
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/perfect1337/logger v0.0.0-20250515181521-d6144849f7f5
+	github.com/lera-guryan2222/logger v0.0.0-20250524142237-dfd6bce17a80
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 )
@@ -33,7 +33,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/perfect1337/auth-service => ../auth-service
+replace github.com/lera-guryan2222/fooorum/auth-service => ../auth-service
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

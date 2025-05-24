@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/perfect1337/forum-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

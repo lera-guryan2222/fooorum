@@ -5,9 +5,9 @@ import (
 	"context"
 	"strconv"
 
-	postProto "github.com/perfect1337/forum-service/internal/proto/post"
-	userProto "github.com/perfect1337/forum-service/internal/proto/user"
-	"github.com/perfect1337/forum-service/internal/usecase"
+	postProto "github.com/lera-guryan2222/fooorum/forum-service/internal/proto/post"
+	userProto "github.com/lera-guryan2222/fooorum/forum-service/internal/proto/user"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/usecase"
 	googlegrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

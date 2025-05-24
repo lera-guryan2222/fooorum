@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/config"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
 	_ "github.com/lib/pq"
-	"github.com/perfect1337/forum-service/internal/config"
-	"github.com/perfect1337/forum-service/internal/entity"
 )
 
 type PostRepository interface {

@@ -1,4 +1,4 @@
-module github.com/perfect1337/auth-service
+module github.com/lera-guryan2222/fooorum/auth-service
 
 go 1.24.0
 
@@ -9,8 +9,8 @@ require (
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
+	github.com/lera-guryan2222/logger v0.0.0-20250524142237-dfd6bce17a80
 	github.com/lib/pq v1.10.9
-	github.com/perfect1337/logger v0.0.0-20250515181521-d6144849f7f5
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.38.0
@@ -30,7 +30,7 @@ require (
 	golang.org/x/tools v0.33.0 // indirect
 )
 
-replace github.com/perfect1337/auth-service => ../auth-service
+replace github.com/lera-guryan2222/fooorum/auth-service => ../auth-service
 
 require (
 	github.com/bytedance/sonic v1.13.2 // indirect

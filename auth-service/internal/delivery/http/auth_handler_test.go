@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/perfect1337/auth-service/internal/mocks"
-	"github.com/perfect1337/auth-service/internal/usecase"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/mocks"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/usecase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

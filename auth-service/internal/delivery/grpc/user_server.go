@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	user "github.com/perfect1337/auth-service/internal/proto"
-	"github.com/perfect1337/auth-service/internal/repository"
+	user "github.com/lera-guryan2222/fooorum/auth-service/internal/proto"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/repository"
 )
 
 // GetUsername godoc

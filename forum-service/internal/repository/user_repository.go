@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
 	"github.com/lib/pq"
-	"github.com/perfect1337/forum-service/internal/entity"
 	"github.com/stretchr/testify/mock"
 )
 

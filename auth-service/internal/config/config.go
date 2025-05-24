@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/perfect1337/logger"
+	"github.com/lera-guryan2222/logger"
 )
 
 // PostgresConfig содержит конфигурацию для подключения к PostgreSQL

@@ -10,9 +10,9 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/config"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/entity"
 	_ "github.com/lib/pq"
-	"github.com/perfect1337/auth-service/internal/config"
-	"github.com/perfect1337/auth-service/internal/entity"
 )
 
 type Postgres struct {
@@ -134,7 +134,7 @@ func NewPostgres(cfg *config.Config) (*Postgres, error) {
 
 func (p *Postgres) RunMigrations() error {
 	// Абсолютный путь к директории с миграциями
-	migrationsDir := "C:\\Users\\usr09\\OneDrive\\Рабочий стол\\perfect\\auth-service\\migrations"
+	migrationsDir := "C:\\Users\\usr09\\OneDrive\\Рабочий стол\\forumforum\\auth-service\\migrations"
 
 	// Проверка существования директории с миграциями
 	entries, err := os.ReadDir(migrationsDir)

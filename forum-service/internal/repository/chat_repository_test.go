@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
 	_ "github.com/lib/pq" // Драйвер для PostgreSQL
-	"github.com/perfect1337/forum-service/internal/entity"
 	"github.com/stretchr/testify/assert"
 )
 

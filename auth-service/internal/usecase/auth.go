@@ -9,8 +9,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/perfect1337/auth-service/internal/entity"
-	"github.com/perfect1337/auth-service/internal/repository"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/dgrijalva/jwt-go"

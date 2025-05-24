@@ -16,8 +16,8 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/perfect1337/auth-service/internal/config"
-	"github.com/perfect1337/auth-service/internal/usecase"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/config"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/usecase"
 )
 
 // RegisterRequest представляет данные для регистрации

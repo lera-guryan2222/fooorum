@@ -6,18 +6,18 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	_ "github.com/perfect1337/auth-service/docs"
-	"github.com/perfect1337/auth-service/internal/config"
-	grpchandler "github.com/perfect1337/auth-service/internal/delivery/grpc"
-	delivery "github.com/perfect1337/auth-service/internal/delivery/http"
-	user "github.com/perfect1337/auth-service/internal/proto"
-	"github.com/perfect1337/auth-service/internal/repository"
-	
-	"github.com/perfect1337/auth-service/internal/usecase"
+	_ "github.com/lera-guryan2222/fooorum/auth-service/docs"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/config"
+	grpchandler "github.com/lera-guryan2222/fooorum/auth-service/internal/delivery/grpc"
+	delivery "github.com/lera-guryan2222/fooorum/auth-service/internal/delivery/http"
+	user "github.com/lera-guryan2222/fooorum/auth-service/internal/proto"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/repository"
+
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/usecase"
+	logg "github.com/lera-guryan2222/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"google.golang.org/grpc"
-	logg "github.com/perfect1337/logger"
 )
 
 // @title Auth Service API

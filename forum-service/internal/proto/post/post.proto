@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package post;
 
-option go_package = "github.com/perfect1337/forum-service/internal/proto/post";
+option go_package = "github.com/lera-guryan2222/fooorum/forum-service/internal/proto/post";
 
 import "user.proto"; // Импортируем user.proto
 

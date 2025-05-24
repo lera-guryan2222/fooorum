@@ -11,9 +11,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
-	"github.com/perfect1337/forum-service/internal/config"
-	"github.com/perfect1337/forum-service/internal/entity"
-	"github.com/perfect1337/forum-service/internal/repository"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/config"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/repository"
 )
 
 type AuthUseCase struct {

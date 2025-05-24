@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/perfect1337/forum-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
 )
 
 type ChatRepository interface {

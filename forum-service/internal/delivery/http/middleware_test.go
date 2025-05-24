@@ -9,7 +9,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/perfect1337/forum-service/internal/config"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

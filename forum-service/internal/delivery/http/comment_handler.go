@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/perfect1337/forum-service/internal/entity"
-	"github.com/perfect1337/forum-service/internal/usecase"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/usecase"
 )
 
 type CommentHandler struct {

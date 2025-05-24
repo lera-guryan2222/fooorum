@@ -7,7 +7,7 @@
 package post
 
 import (
-	_ "github.com/perfect1337/forum-service/internal/proto/user"
+	_ "github.com/lera-guryan2222/fooorum/forum-service/internal/proto/user"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

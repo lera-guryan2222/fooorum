@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/perfect1337/forum-service/internal/entity"
-	"github.com/perfect1337/forum-service/internal/repository"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/forum-service/internal/repository"
 )
 
 type UserUseCase struct {

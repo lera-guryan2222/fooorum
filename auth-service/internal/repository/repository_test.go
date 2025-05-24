@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/config"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/entity"
 	_ "github.com/lib/pq"
-	"github.com/perfect1337/auth-service/internal/config"
-	"github.com/perfect1337/auth-service/internal/entity"
 	"github.com/stretchr/testify/assert"
 )
 

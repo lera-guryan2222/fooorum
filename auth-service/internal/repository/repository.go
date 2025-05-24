@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/perfect1337/auth-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/entity"
 )
 
 // UserRepository отвечает за операции с пользователями

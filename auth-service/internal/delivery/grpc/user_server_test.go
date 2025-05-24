@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/perfect1337/auth-service/internal/entity"
-	"github.com/perfect1337/auth-service/internal/mocks"
-	user "github.com/perfect1337/auth-service/internal/proto"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/entity"
+	"github.com/lera-guryan2222/fooorum/auth-service/internal/mocks"
+	user "github.com/lera-guryan2222/fooorum/auth-service/internal/proto"
 	"github.com/stretchr/testify/assert"
 )
 
