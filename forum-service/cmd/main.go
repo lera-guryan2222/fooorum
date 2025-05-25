@@ -102,7 +102,7 @@ func main() {
 
 	// Start gRPC server in goroutine
 	go func() {
-		lis, err := net.Listen("tcp", ":"+cfg.Postgres.GRPCPort)
+		lis, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}

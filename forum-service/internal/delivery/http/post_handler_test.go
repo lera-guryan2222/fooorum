@@ -49,6 +49,11 @@ type MockUserUseCase struct {
 	mock.Mock
 }
 
+// CreateUser implements usecase.UserUseCaseInterface.
+func (m *MockUserUseCase) CreateUser(ctx context.Context, user *entity.User) error {
+	panic("unimplemented")
+}
+
 func (m *MockUserUseCase) GetUserByID(ctx context.Context, id int) (*entity.User, error) {
 	args := m.Called(ctx, id)
 	return args.Get(0).(*entity.User), args.Error(1)
