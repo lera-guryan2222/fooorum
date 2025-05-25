@@ -14,8 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockPostUseCase реализация мока для PostUseCase
-// MockPostUseCase
+// реализация мока для PostUseCase
 type MockPostUseCase struct {
 	mock.Mock
 }
@@ -64,10 +63,8 @@ func (m *MockUserUseCase) GetUsersByIDs(ctx context.Context, ids []int) (map[int
 	return args.Get(0).(map[int]*entity.User), args.Error(1)
 }
 
-// Проверка реализации интерфейсов
 var _ usecase.PostUseCase = (*MockPostUseCase)(nil)
 
-// ... остальные тестовые функции без изменений ...
 func TestNewPostHandler(t *testing.T) {
 	mockPostUC := new(MockPostUseCase)
 	mockCommentUC := new(MockCommentUseCase)
@@ -87,11 +84,16 @@ func TestPostHandler_CreatePost_Success(t *testing.T) {
 	// Настраиваем моки
 	testUser := &entity.User{ID: 1, Username: "testuser"}
 	mockUserUC.On("GetUserByID", mock.Anything, 1).Return(testUser, nil)
+	mockUserUC.On("CreateUser", mock.Anything, mock.AnythingOfType("*entity.User")).Return(nil)
 	mockPostUC.On("CreatePost", mock.Anything, mock.AnythingOfType("*entity.Post")).Return(nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
+
+	// Устанавливаем ВСЕ необходимые данные пользователя в контекст
 	c.Set("user_id", 1)
+	c.Set("username", "testuser")
+	c.Set("role", "user")
 
 	// Create a valid JSON body for the request
 	postJSON := `{"title": "Test Post", "content": "This is a test post"}`
@@ -149,7 +151,6 @@ func TestPostHandler_GetPostByID_Success(t *testing.T) {
 	mockCommentUC := new(MockCommentUseCase)
 	mockUserUC := new(MockUserUseCase)
 
-	// Настраиваем моки
 	testPost := &entity.Post{ID: 1, UserID: 1}
 	testUser := &entity.User{ID: 1, Username: "testuser"}
 	testComments := []entity.Comment{{ID: 1, PostID: 1, UserID: 1}}
@@ -199,9 +200,6 @@ func TestPostHandler_GetPostByID_NotFound(t *testing.T) {
 	mockCommentUC := new(MockCommentUseCase)
 	mockUserUC := new(MockUserUseCase)
 
-	// Исправляем типы:
-	// 1. Для контекста используем mock.Anything (он совместим с context.Context)
-	// 2. Для ID используем int (как в реальном вызове)
 	mockPostUC.On("GetPostByID", mock.Anything, 1).Return((*entity.Post)(nil), assert.AnError)
 
 	w := httptest.NewRecorder()
@@ -222,7 +220,6 @@ func TestPostHandler_GetAllPosts_Success(t *testing.T) {
 	mockCommentUC := new(MockCommentUseCase)
 	mockUserUC := new(MockUserUseCase)
 
-	// Настраиваем моки
 	testPosts := []*entity.Post{{ID: 1, UserID: 1}, {ID: 2, UserID: 2}}
 	testUser1 := &entity.User{ID: 1, Username: "user1"}
 	testUser2 := &entity.User{ID: 2, Username: "user2"}
@@ -250,17 +247,15 @@ func TestPostHandler_GetAllPosts_WithComments(t *testing.T) {
 	mockCommentUC := new(MockCommentUseCase)
 	mockUserUC := new(MockUserUseCase)
 
-	// Настраиваем моки
 	testPosts := []*entity.Post{{ID: 1, UserID: 1}, {ID: 2, UserID: 2}}
 	testUser1 := &entity.User{ID: 1, Username: "user1"}
 	testUser2 := &entity.User{ID: 2, Username: "user2"}
 	testComments1 := []entity.Comment{{ID: 1, PostID: 1, UserID: 1}}
-	testComments2 := []entity.Comment{} // Пустой список комментариев для поста 2
+	testComments2 := []entity.Comment{}
 
 	mockPostUC.On("GetAllPosts", mock.Anything).Return(testPosts, nil)
 	mockUserUC.On("GetUserByID", mock.Anything, 1).Return(testUser1, nil).Twice()
 	mockUserUC.On("GetUserByID", mock.Anything, 2).Return(testUser2, nil)
-	// Настраиваем моки для обоих постов
 	mockCommentUC.On("GetCommentsByPostID", mock.Anything, 1).Return(testComments1, nil)
 	mockCommentUC.On("GetCommentsByPostID", mock.Anything, 2).Return(testComments2, nil)
 
@@ -284,7 +279,6 @@ func TestPostHandler_DeletePost_Success(t *testing.T) {
 	mockCommentUC := new(MockCommentUseCase)
 	mockUserUC := new(MockUserUseCase)
 
-	// Настраиваем моки
 	mockPostUC.On("DeletePost", mock.Anything, 1, 1).Return(nil)
 
 	w := httptest.NewRecorder()
@@ -311,8 +305,6 @@ func TestPostHandler_DeletePost_Unauthorized(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("DELETE", "/posts/1", nil)
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-
-	// Не устанавливаем user_id, чтобы симулировать неаутентифицированного пользователя
 
 	handler := NewPostHandler(mockPostUC, mockCommentUC, mockUserUC)
 	handler.DeletePost(c)
@@ -346,7 +338,6 @@ func TestPostHandler_DeletePost_InternalError(t *testing.T) {
 	mockCommentUC := new(MockCommentUseCase)
 	mockUserUC := new(MockUserUseCase)
 
-	// Настраиваем моки
 	mockPostUC.On("DeletePost", mock.Anything, 1, 1).Return(assert.AnError)
 
 	w := httptest.NewRecorder()
